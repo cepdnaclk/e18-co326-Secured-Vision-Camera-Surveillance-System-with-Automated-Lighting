@@ -279,7 +279,7 @@ void callback(String &topic, String &payload) {
       // digitalWrite(33, HIGH);
       mirror=0;
     }
-  }else if(String(topic)==ESP32CAM_MIRROR_IMAGE){
+  }else if(String(topic)==ESP32CAM_FLIP_IMAGE){
     Serial.print("Flip mode ");
     if(payload == "true"){
       Serial.println("on");
