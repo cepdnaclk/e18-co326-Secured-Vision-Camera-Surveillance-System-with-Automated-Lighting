@@ -1,6 +1,8 @@
 #include <MQTTClient.h>
 #include <WiFi.h>
 #include "esp_camera.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 //camera pins for AI-Thinker camera model
 #define PWDN_GPIO_NUM     32
@@ -21,20 +23,39 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-// MQTT topic
-#define ESP32CAM_PUBLISH_TOPIC "esp32/cam_0"
+// MQTT topics
+#define ESP32CAM_ENABLE "esp32/enable"
+#define ESP32CAM_PUBLISH_IMAGE "esp32/cam"
+#define ESP32CAM_NORMAL_IMAGE "esp32/norm_cam"
+#define ESP32CAM_NEGATIVE_IMAGE "esp32/neg_cam"
+#define ESP32CAM_GRAYSCALE_IMAGE "esp32/gray_cam"
+#define ESP32CAM_REDTINT_IMAGE "esp32/red_cam"
+#define ESP32CAM_BLUETINT_IMAGE "esp32/blue_cam"
+#define ESP32CAM_GREENTINT_IMAGE "esp32/green_cam"
+#define ESP32CAM_SEPIA_IMAGE "esp32/sepia_cam"
+#define ESP32CAM_MIRROR_IMAGE "esp32/mirror_cam"
+#define ESP32CAM_FLIP_IMAGE "esp32/flip_cam"
+
+bool isCameraEnabled=false;
 
 const int bufferSize = 40000;//requires the size of the data being sent
 
+// configure LED pin
+// const int LED_PIN=13;
+
+int spe_effect=0;
+int mirror=0;
+int flip=0;
+
 // Replace with your own network credentials
-const char* ssid = "xxx";
-const char* password = "xxxx";
+const char* ssid = "Dialog 4G 313";
+const char* password = "7a8Da8c3";
 
 // MQTT broker details
-const char* mqtt_server = "xx.xx.xx.xx";
+const char* mqtt_server = "192.168.8.119";
 const int mqtt_port = 1883;
-const char* mqtt_username = "xxx";
-const char* mqtt_password = "xxx";
+const char* mqtt_username = "cctv";
+const char* mqtt_password = "co326";
 
 WiFiClient net;
 MQTTClient client = MQTTClient(bufferSize);
@@ -74,8 +95,39 @@ void cameraInit(){
   }
 }
 
+
+
 void grabImage(){
   camera_fb_t * fb = esp_camera_fb_get();
+  sensor_t * s = esp_camera_sensor_get();
+
+  // Serial.println("special effect value: ");
+  // Serial.println(spe_effect);
+
+  s->set_brightness(s, 0);     // -2 to 2
+  s->set_contrast(s, 0);       // -2 to 2
+  s->set_saturation(s, 0);     // -2 to 2
+  s->set_special_effect(s, spe_effect); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
+  s->set_whitebal(s, 1);       // 0 = disable , 1 = enable
+  s->set_awb_gain(s, 1);       // 0 = disable , 1 = enable
+  s->set_wb_mode(s, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
+  s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
+  s->set_aec2(s, 0);           // 0 = disable , 1 = enable
+  s->set_ae_level(s, 0);       // -2 to 2
+  s->set_aec_value(s, 300);    // 0 to 1200
+  s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
+  s->set_agc_gain(s, 0);       // 0 to 30
+  s->set_gainceiling(s, (gainceiling_t)0);  // 0 to 6
+  s->set_bpc(s, 0);            // 0 = disable , 1 = enable
+  s->set_wpc(s, 1);            // 0 = disable , 1 = enable
+  s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
+  s->set_lenc(s, 1);           // 0 = disable , 1 = enable
+  s->set_hmirror(s, mirror);        // 0 = disable , 1 = enable
+  s->set_vflip(s, flip);          // 0 = disable , 1 = enable
+  s->set_dcw(s, 1);            // 0 = disable , 1 = enable
+  s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
+
+
   Serial.println("\n\n=====================");
   Serial.println("Publishing");
   Serial.println("=====================\n\n");
@@ -84,7 +136,7 @@ void grabImage(){
     Serial.print("Image Length: ");
     Serial.print(fb->len);
     Serial.print("\t Publish Image: ");
-    bool result = client.publish(ESP32CAM_PUBLISH_TOPIC, (const char*)fb->buf, fb->len);
+    bool result = client.publish(ESP32CAM_PUBLISH_IMAGE, (const char*)fb->buf, fb->len);
     Serial.println(result);//true if published normally false if not
     
     if(!result){
@@ -98,6 +150,7 @@ void grabImage(){
   esp_camera_fb_return(fb);
   delay(500);
 }
+
 
 void setupWifi(){
   WiFi.begin(ssid, password);
@@ -114,9 +167,139 @@ void setupWifi(){
   Serial.println("WiFi connected");
 }
 
+void callback(String &topic, String &payload) {
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  Serial.println(payload);
+  
+  if(String(topic)==ESP32CAM_ENABLE){
+    Serial.print("Camera ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      isCameraEnabled = true;
+    }else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      isCameraEnabled = false;  
+    }
+  }else if(String(topic)==ESP32CAM_NORMAL_IMAGE){
+    Serial.print("Negative mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=0;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_NEGATIVE_IMAGE){
+    Serial.print("Negative mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=1;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_GRAYSCALE_IMAGE){
+    Serial.print("Grayscale mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=2;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_REDTINT_IMAGE){
+    Serial.print("Red Tint mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=3;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_BLUETINT_IMAGE){
+    Serial.print("Blue Tint mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=4;
+    }else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_GREENTINT_IMAGE){
+    Serial.print("Green Tint mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=5;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_SEPIA_IMAGE){
+    Serial.print("Sepia mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      spe_effect=6;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      spe_effect=0;
+    }
+  }else if(String(topic)==ESP32CAM_MIRROR_IMAGE){
+    Serial.print("Mirror mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      mirror=1;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      mirror=0;
+    }
+  }else if(String(topic)==ESP32CAM_MIRROR_IMAGE){
+    Serial.print("Flip mode ");
+    if(payload == "true"){
+      Serial.println("on");
+      // digitalWrite(33, LOW);
+      flip=1;
+    }
+    else if(payload == "false"){
+      Serial.println("off");
+      // digitalWrite(33, HIGH);
+      flip=0;
+    }
+  }else{
+    Serial.println("No such topic");
+  }
+}
+
 void connectBroker(){
   client.begin(mqtt_server,mqtt_port,net);
   client.setCleanSession(true);
+  client.onMessage(callback);
 
   Serial.println("\n\n=====================");
   String client_id = "esp32-client-";
@@ -136,14 +319,42 @@ void connectBroker(){
 
 void setup() {
   // put your setup code here, to run once:
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Serial.begin(115200);
   cameraInit();
   setupWifi();
   connectBroker();
+  client.subscribe(ESP32CAM_ENABLE);
+  client.subscribe(ESP32CAM_NORMAL_IMAGE);
+  client.subscribe(ESP32CAM_NEGATIVE_IMAGE);
+  client.subscribe(ESP32CAM_NORMAL_IMAGE);
+  client.subscribe(ESP32CAM_GRAYSCALE_IMAGE);
+  client.subscribe(ESP32CAM_REDTINT_IMAGE);
+  client.subscribe(ESP32CAM_BLUETINT_IMAGE);
+  client.subscribe(ESP32CAM_GREENTINT_IMAGE);
+  client.subscribe(ESP32CAM_SEPIA_IMAGE);
+  client.subscribe(ESP32CAM_MIRROR_IMAGE);
+  client.subscribe(ESP32CAM_FLIP_IMAGE);
 }
+
 
 void loop() {
   // put your main code here, to run repeatedly:
   client.loop();
-  if(client.connected()) grabImage();
+  // pinMode(PIR_PIN,INPUT_PULLUP);
+  // int motion=digitalRead(PIR_PIN);
+  // Serial.println(motion);
+  // if(motion==1){
+  //   Serial.println("\n\n=====================");
+  //   Serial.println("Motion Detected!");
+  //   Serial.println("=====================\n\n");
+  // }
+  if(isCameraEnabled && client.connected() ){
+    // Serial.println("\n\n=====================");
+    // Serial.println("Motion Detected!");
+    // Serial.println("=====================\n\n");
+    grabImage();
+    delay(1000);
+  } 
+
 }
