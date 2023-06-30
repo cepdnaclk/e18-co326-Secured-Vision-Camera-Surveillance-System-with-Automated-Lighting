@@ -24,24 +24,24 @@
 #define PCLK_GPIO_NUM     22
 
 // MQTT topics
-#define ESP32CAM_ENABLE "esp32/enable"
-#define ESP32CAM_PUBLISH_IMAGE "esp32/cam"
-#define ESP32CAM_NORMAL_IMAGE "esp32/norm_cam"
-#define ESP32CAM_NEGATIVE_IMAGE "esp32/neg_cam"
-#define ESP32CAM_GRAYSCALE_IMAGE "esp32/gray_cam"
-#define ESP32CAM_REDTINT_IMAGE "esp32/red_cam"
-#define ESP32CAM_BLUETINT_IMAGE "esp32/blue_cam"
-#define ESP32CAM_GREENTINT_IMAGE "esp32/green_cam"
-#define ESP32CAM_SEPIA_IMAGE "esp32/sepia_cam"
-#define ESP32CAM_MIRROR_IMAGE "esp32/mirror_cam"
-#define ESP32CAM_FLIP_IMAGE "esp32/flip_cam"
+#define ESP32CAM_ENABLE "UoP_CO_326_E18_16_esp32/enable"
+#define ESP32CAM_PUBLISH_IMAGE "UoP_CO_326_E18_16_esp32/cam"
+#define ESP32CAM_NORMAL_IMAGE "UoP_CO_326_E18_16_esp32/norm_cam"
+#define ESP32CAM_NEGATIVE_IMAGE "UoP_CO_326_E18_16_esp32/neg_cam"
+#define ESP32CAM_GRAYSCALE_IMAGE "UoP_CO_326_E18_16_esp32/gray_cam"
+#define ESP32CAM_REDTINT_IMAGE "UoP_CO_326_E18_16_esp32/red_cam"
+#define ESP32CAM_BLUETINT_IMAGE "UoP_CO_326_E18_16_esp32/blue_cam"
+#define ESP32CAM_GREENTINT_IMAGE "UoP_CO_326_E18_16_esp32/green_cam"
+#define ESP32CAM_SEPIA_IMAGE "UoP_CO_326_E18_16_esp32/sepia_cam"
+#define ESP32CAM_MIRROR_IMAGE "UoP_CO_326_E18_16_esp32/mirror_cam"
+#define ESP32CAM_FLIP_IMAGE "UoP_CO_326_E18_16_esp32/flip_cam"
 
 bool isCameraEnabled=false;
 
 const int bufferSize = 40000;//requires the size of the data being sent
 
 // configure LED pin
-// const int LED_PIN=13;
+const int LED_PIN=13;
 
 int spe_effect=0;
 int mirror=0;
@@ -177,11 +177,11 @@ void callback(String &topic, String &payload) {
     Serial.print("Camera ");
     if(payload == "true"){
       Serial.println("on");
-      // digitalWrite(33, LOW);
+      digitalWrite(LED_PIN, HIGH);
       isCameraEnabled = true;
     }else if(payload == "false"){
       Serial.println("off");
-      // digitalWrite(33, HIGH);
+      digitalWrite(LED_PIN, LOW);
       isCameraEnabled = false;  
     }
   }else if(String(topic)==ESP32CAM_NORMAL_IMAGE){
@@ -237,7 +237,7 @@ void callback(String &topic, String &payload) {
     if(payload == "true"){
       Serial.println("on");
       // digitalWrite(33, LOW);
-      spe_effect=4;
+      spe_effect=5;
     }else if(payload == "false"){
       Serial.println("off");
       // digitalWrite(33, HIGH);
@@ -248,7 +248,7 @@ void callback(String &topic, String &payload) {
     if(payload == "true"){
       Serial.println("on");
       // digitalWrite(33, LOW);
-      spe_effect=5;
+      spe_effect=4;
     }
     else if(payload == "false"){
       Serial.println("off");
