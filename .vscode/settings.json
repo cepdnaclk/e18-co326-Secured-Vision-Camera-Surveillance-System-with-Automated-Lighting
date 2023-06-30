@@ -1,3 +1,4 @@
 {
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+    "cmake.sourceDirectory": "C:/Users/94762/OneDrive/Desktop/SEM06/CO326/e18-co326-Secured-Vision-Camera-Surveillance-System-with-Automated-Lighting/.pio/libdeps/esp32cam/MQTT"
 }
