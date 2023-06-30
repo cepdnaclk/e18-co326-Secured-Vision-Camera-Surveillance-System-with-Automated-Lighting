@@ -48,14 +48,14 @@ int mirror=0;
 int flip=0;
 
 // Replace with your own network credentials
-const char* ssid = "Dialog 4G 313";
-const char* password = "7a8Da8c3";
+const char* ssid = "xxx";
+const char* password = "xxx";
 
 // MQTT broker details
-const char* mqtt_server = "192.168.8.119";
+const char* mqtt_server = "xx.xx.xx.xx";
 const int mqtt_port = 1883;
-const char* mqtt_username = "cctv";
-const char* mqtt_password = "co326";
+const char* mqtt_username = "xx";
+const char* mqtt_password = "xxx";
 
 WiFiClient net;
 MQTTClient client = MQTTClient(bufferSize);
